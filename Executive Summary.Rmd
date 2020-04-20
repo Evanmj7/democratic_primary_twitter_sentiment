@@ -1,0 +1,26 @@
+---
+title: "Executive Summary"
+author: "Evan Jonson"
+date: "4/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+More and more people are tending to look towards social media to gain facts and opinions surrounding current events and the news. Social Media has dramatically changed the way political campaigns are run and enables individuals to be more engaged in politics. For this project we thought it would be interesting to see if we could create a predictive model that could forecast how each of the Democatic candidates would do based on how people tweet about them through sentiment and total number of tweets. 
+
+## Data
+
+The data component was the most time consuming and challenging portion of this project. We utilized real world data by collecting geolocation specific tweets through Twitter and Google’s API surrounding Democratic candidates for Super Tuesday 2020. Since we chose to use data that was accessible in real time, it took some time to dissect and analyse the way the data was coming in and make the appropriate changes. We initially pulled in all the individual tweets by state and candidates 9 days prior to Super Tuesday. Our final data frame consisted of columns that contained the daily average sentiment and the daily number of tweets broken down by state and candidate over the course of a week. Due to some issue with the collection of data we ended up having to exclude observations from Bloomberg in Texas, Biden in Minnesota and Bernie in both Massachusetts and Minnesota. There were several obstacles that we had to overcome when creating this finalized training data frame. A minor inconvenience we ran into at the beginning was working with the APIs to access the geolocation feature and apply it to the data collection. The main issues we encountered was trying to figure out what to do after some candidates suspended their campaigns. With the removal of Buttigieg and Klobuchar from the candidate pool we lost a significant amount of observations to train our models on. We repaired this by choosing to separate each candidate's tweets and average sentiment into one day periods, thus creating a time series matrix. 
+	
+## Methods
+
+Since we have a limited data set that reduces the number of available prediction models we could pick from. The five types of models we ended up building were a lasso, random forest, boosted tree, K-nearest neighbors and a support vector machine. For the lasso model we used MSE for cross validation to select the best lambda, tuning parameter, to model. We defined the lambda in lasso as 10^seq(from = 3, to = -5, length = 1000). Our random forest model used out of bag estimation to train the data and then applied tuning parameters that limited the size of each node to 1:10, the number of trees to 25:1000 by 25 and split the branches 2:13. The boosted tree was very similar to the random forest, however we added an interaction depth of 1:5 and shrinkage parameters (.1, .01, .001). For the boosted tree, we also changed how we cross validated to being  a 5-fold CV. For the KNN model we tried various k’s and found the best RMSE and then used 10-fold cross validation. Lastly, we used a polynomial SVM model and our tuning parameter was C = 10^seq(-7, -4, by = 1) with degree = 1:5 and  scale = c(.5,1,2). The cross validation for the SVM we used was the RMSE. 
+	
+## Results  and Conclusion
+
+Performance was measured by RMSE and MAE, validated in sample either through cross validation or OOB error rates depending on the models. We modeled using a decision tree, boosted tree, random forest, KNN, SVM, and Lasso. For simplicity and space constraints, our best model was KNN, which had a RMSE of around 7.8 and a MAE of 5.8. Our models were limited by the fact that Bernie supporters are a part of the demographic who are most active on twitter.  There are also tweets that contain multiple candidates and show clear bias for one and since the sentiment R package is dictionary based so it breaks it down by word (not capturing context). This could bias the estimates of sentiment we made. Finally, twitter is not necessarily a good indicator of performance across the board, the real world is very different from twitter. With all this taken into account, we wouldn’t make any bets on our predictions, but it tells us some interesting things about the relationship between twitter data and primary results. Sentiment was far more important than the number of tweets candidates received. We also learned more about the applicability of these models to situations such as this.
