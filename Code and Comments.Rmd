@@ -1,0 +1,544 @@
+---
+title: "Code and Comments"
+author: "Evan Jonson"
+date: "4/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(pacman)
+p_load(tidyverse, rtweet,sentimentr,data.table,lubridate,janitor,magrittr,stringr,estimatr)
+```
+
+
+```{Code}
+## store api keys
+twitter_api_key <- "XX" #api key obtained from twitter
+api_secret_key <- "XX"
+
+## authenticate via web browser
+token <- create_token(
+  app = "twittersentimentprimary", # the name of my app
+  consumer_key = twitter_api_key,
+  consumer_secret = api_secret_key)
+
+# test tweet search
+#rt <- search_tweets(
+#  "#bernie", n = 10, include_rts = FALSE
+#)
+
+# Test the state lookup. Here we created a google geolocation API account
+oregon <- lookup_coords(address="oregon")
+
+# The following code was for the preliminary analyses. Sys.time() tells the time of the system when the code is executed
+# since these datapoints can take hours to collect, it is nice to know how long it has been running
+Sys.time()
+nhbernie <- search_tweets(
+  "#bernie OR #bernie2020 OR bernie OR sanders", geocode = lookup_coords(address="new hampshire"), n = 100000,
+  include_rts = FALSE, retryonratelimit = TRUE
+)
+Sys.time()
+# Checks the dimmensions of the data, see how many tweets we got
+dim(nhbernie)
+# Write to a file
+fwrite(nhbernie,file="C:/Users/Evanm/Documents/nhbernie.csv")
+
+# The same is done for all other candidates below.
+# this was just a preliminary test, a loop is created below
+
+states <- c("alabama","arkansas","california","colorado","maine","massachusetts","minnesota","north carolina","oklahoma","tennessee","texas","utah","vermont","virginia")
+
+candidates <- c("bernie","steyer","buttigieg","warren","klobuchar","biden")
+
+# Write a for loop for super Tuesday
+# Here is a loop that goes over all states from a list of states for super tuesday.
+# a new loop is done for each candidate. Alternatively I could have created a nested loop but I was running into issues with that
+
+for (st in states) {
+  state = lookup_coords(address=st)
+  ststeyer <- paste(st,"steyer",sep="_")
+  ststeyer <- search_tweets(
+    "#steyer OR #steyer2020 OR steyer OR tom", geocode = state, n = 10,
+    include_rts = FALSE, retryonratelimit = TRUE
+  )
+  fwrite(ststeyer,file=paste("C:/Users/Evanm/Documents/",st, "steyer.csv",sep='_'))
+  
+  
+}
+for (st in states) {
+  state = lookup_coords(address=st)
+  
+  ststeyer <- paste(st,"steyer",sep="_")
+  ststeyer <- search_tweets(
+    "#steyer OR #steyer2020 OR steyer OR tom", geocode = state, n = 10,
+    include_rts = FALSE, retryonratelimit = TRUE
+  )
+  fwrite(paste(st,"steyer",sep="_"),file=paste("C:/Users/Evanm/Documents/",st, "steyer",sep='_'))
+}
+
+# Now lets think about the sentiment per person
+# Tells the times tweets were made
+nvbernie$created_at
+# converts those times into year, month, day, hour, minute, second time variables
+nvbernie$created_at <- ymd_hms(nvbernie$created_at)
+# filters for specific times
+bernietime <- nvbernie %>%
+  filter(created_at >= as.Date("2020-02-20 00:00:00") & created_at <= as.Date("2020-02-22 8:00:00 UTC"))
+# again, here we can get the sentiment of tweets that include bernie's name
+berniesents <- get_sentences(bernietime$text %>% as.character())
+berniesent <- sentiment(berniesents)
+
+# First we should subset away all neutral sentiments. These are usually descriptive and will make our results less stark
+berniesub <- subset(berniesent,sentiment != 0)
+meanbernie <- mean(berniesub$sentiment)
+
+meanbernie
+
+############# BIDEN
+nvbiden$created_at <- ymd_hms(nvbiden$created_at)
+bidentime <- nvbiden %>%
+  filter(created_at >= as.Date("2020-02-20 00:00:00") & created_at <= as.Date("2020-02-22 8:00:00 UTC"))
+
+bidensents <- get_sentences(bidentime$text %>% as.character())
+bidensent <- sentiment(bidensents)
+
+# First we should subset away all neutral sentiments. These are usually descriptive and will make our results less stark
+bidensub <- subset(bidensent,sentiment != 0)
+meanbiden <- mean(bidensub$sentiment)
+
+meanbiden
+
+####### buttigieg
+nvbuttigieg$created_at <- ymd_hms(nvbuttigieg$created_at)
+buttigiegtime <- nvbuttigieg %>%
+  filter(created_at >= as.Date("2020-02-20 00:00:00") & created_at <= as.Date("2020-02-22 8:00:00 UTC"))
+
+buttigiegsents <- get_sentences(buttigiegtime$text %>% as.character())
+buttigiegsent <- sentiment(buttigiegsents)
+
+# First we should subset away all neutral sentiments. These are usually descriptive and will make our results less stark
+buttigiegsub <- subset(buttigiegsent,sentiment != 0)
+meanbuttigieg <- mean(buttigiegsub$sentiment)
+
+meanbuttigieg
+
+meanbernie
+
+# Now lets think about the sentiment per person again
+getwd()
+nvbernie <- fread("C:/Users/Evanm/Documents/nvbernie.csv")
+results <- read.csv("C:/Users/Evanm/Downloads/results.csv")
+
+nvbernie$created_at
+nvbernie$created_at <- ymd_hms(nvbernie$created_at)
+bernietime <- nvbernie %>%
+  filter(created_at >= as.Date("2020-02-20 00:00:00") & created_at <= as.Date("2020-02-22 8:00:00 UTC"))
+max(bernietime$created_at)
+dim(bernietime)
+berniesents <- get_sentences(bernietime$text %>% as.character())
+berniesent <- sentiment(berniesents)
+
+# First we should subset away all neutral sentiments. These are usually descriptive and will make our results less stark
+berniesub <- subset(berniesent,sentiment != 0)
+meanbernie <- mean(berniesub$sentiment)
+
+meanbernie
+
+finsent
+ntweets
+
+# NEVADA
+nvntweets <- matrix()
+colnames(nvntweets) <- c("candidate","ntweets")
+nvfinsent <- matrix()
+for (can in candidates) {
+  int <- paste("nv",can,sep="")
+  csvname <- paste(int,".csv",sep="")
+  dat <- read.csv(paste("C:/Users/Evanm/Documents/", csvname,sep = ""))
+  dat$created_at <- ymd_hms(dat$created_at)
+  cantime <- dat %>%
+    filter(created_at >= as.Date("2020-02-20 00:00:00") & created_at <= as.Date("2020-02-22 00:00:00 UTC"))
+  nvntweets[can] <- nrow(cantime)
+  cansents <- get_sentences(cantime$text %>% as.character())
+  cansent <- sentiment(cansents)
+  cansub <- subset(cansent,sentiment != 0)
+  meancan <- mean(cansub$sentiment)
+  nvfinsent[can] <- meancan
+}
+nvntweets
+nvfinsent
+# returns sentiment and number of tweets, we can combine those out here as we please.
+
+# NEW HAMPSHIRE has very little data due to poor timing of projet. Have to throw out.
+
+tweets <- data.frame(nvntweets)
+
+sent <- data.frame(nvfinsent)
+
+tweets[-c(1),]
+View(tweets)
+dat <- cbind(tweets,sent) %>% as.matrix
+dat <- dat[-1,]
+
+results
+nevresults <- subset(results, state == "nevada")
+
+dat <- cbind(dat,nevresults)
+
+dat %>% as.data.frame()
+
+mydat <- dat %>% as.data.frame()
+library(estimatr)
+lm_robust(result ~ nvntweets + nvfinsent + nvntweets*nvfinsent,data = dat)
+
+colnames(mydat)
+
+colnames(results)
+
+?rename
+nrow(nvbernie)
+length
+for (st in states) {
+  state = lookup_coords(address=st)
+  
+  ststeyer <- paste(st,"steyer",sep="_")
+  ststeyer <- search_tweets(
+    "#steyer OR #steyer2020 OR steyer OR tom", geocode = state, n = 10,
+    include_rts = FALSE, retryonratelimit = TRUE
+  )
+  fwrite(paste(st,"steyer",sep="_"),file=paste("C:/Users/Evanm/Documents/",st, "steyer",sep='_'))
+}
+
+
+################################# Time separation
+
+round_time <- function(x, secs) as.POSIXct(hms::round_hms(x, secs))
+## function to calculate sentiment scores
+sent_scores <- function(x) syuzhet::get_sentiment(plain_tweets(x)) - .5
+## calc data set with sentiment variable
+warren <- fread("C:/Users/Evan Jonson/Downloads/_alabama_warren.csv")
+
+# this creates new columns called 'hours' which is the rounded hour the tweet was made and 'sentiment' which is the sentiment that tweet recieved
+tt_sent <- warren %>%
+  mutate(hours = round_time(created_at %>% ymd_hms(), 60 * 60 * 24),
+         sentiment = sent_scores(text))
+
+# this aggregates into individual hours and takes the mean of each hour
+
+aggregate(canstate$sentiment,by=list(canstate$hours),FUN=mean)
+
+# Now lets make a loop out of it, for every state for each individual candidate.
+# warren
+for (state in states) {
+  int <- paste("_",state,"_","warren",sep="")
+  csvname <- paste(int,".csv",sep="")
+  dat <- fread(paste("C:/Users/Evan Jonson/Downloads/", csvname,sep = ""))
+  frame <- as.data.frame(dat)
+  canstate <- paste(state, "warrentime",sep = "_")
+  canstate <- frame %>%
+    mutate(hours = round_time(created_at %>% ymd_hms(), 60 * 60 * 24),
+           sentiment = sent_scores(text))
+  agg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=mean) # aggregates sentiment by hour
+  numbagg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=length)
+  finalagg <- cbind(agg,numbagg$x)
+  #  finalagg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=mean)
+  fwrite(finalagg,file = paste(state, "warrentime.csv",sep = "_"))
+  print(state)
+}
+
+# now Bernie
+for (state in states) {
+  int <- paste("_",state,"_","bernie",sep="")
+  csvname <- paste(int,".csv",sep="")
+  dat <- fread(paste("C:/Users/Evan Jonson/Downloads/", csvname,sep = ""))
+  frame <- as.data.frame(dat)
+  canstate <- paste(state, "bernietime",sep = "_")
+  canstate <- frame %>%
+    mutate(hours = round_time(created_at %>% ymd_hms(), 60 * 60 * 24),
+           sentiment = sent_scores(text))
+  agg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=mean)
+  numbagg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=length)
+  finalagg <- cbind(agg,numbagg$x)  
+  fwrite(finalagg,file = paste(state, "bernietime.csv",sep = "_"))
+  print(state)
+}
+
+# Biden
+for (state in states) {
+  int <- paste("_",state,"_","biden",sep="")
+  csvname <- paste(int,".csv",sep="")
+  dat <- fread(paste("C:/Users/Evan Jonson/Downloads/", csvname,sep = ""))
+  frame <- as.data.frame(dat)
+  canstate <- paste(state, "bidentime",sep = "_")
+  canstate <- frame %>%
+    mutate(hours = round_time(created_at %>% ymd_hms(), 60 * 60 * 24),
+           sentiment = sent_scores(text))
+  agg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=mean)
+  numbagg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=length)
+  finalagg <- cbind(agg,numbagg$x)  
+  fwrite(finalagg,file = paste(state, "bidentime.csv",sep = "_"))
+  print(state)
+}
+
+# Bloomberg
+for (state in states) {
+  int <- paste("_",state,"_","bloomberg",sep="")
+  csvname <- paste(int,".csv",sep="") # Intermediate step, wouldnt let me work otherwise
+  dat <- fread(paste("C:/Users/Evan Jonson/Downloads/", csvname,sep = "")) # read the CSV's in
+  frame <- as.data.frame(dat) # data frame for easier processing
+  canstate <- paste(state, "bloombergtime",sep = "_")
+  canstate <- frame %>%
+    mutate(hours = round_time(created_at %>% ymd_hms(), 60 * 60 * 24), # Creates hourly times
+           sentiment = sent_scores(text)) # creates sentiment score
+  agg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=mean) # aggregates sentiment by hour
+  numbagg <- aggregate(canstate$sentiment,by=list(canstate$hours),FUN=length)
+  finalagg <- cbind(agg,numbagg$x)
+  fwrite(finalagg,file = paste(state, "bloombergtime.csv",sep = "_")) # write to csv for later
+  print(state) # as a sort of progress bar
+}
+
+
+# So we have sentiment by hour. Another of these was done to get the number of tweets.
+
+
+# Final Predictions
+# need to load a few more packages
+p_load(gbm,caTools,Metrics,kernlab,BiocManager,glmnet,caret,ranger,randomForest,tidyverse, rtweet,sentimentr,data.table,lubridate,janitor,magrittr,stringr,estimatr)
+# note, use kernlab for SVM in general.
+
+# create lambdas for ridge regression
+lambdas = 10^seq(from = 3, to = -5, length = 1000)
+# Fit ridge regression
+getwd()
+setwd("C:/Users/Evanm/Downloads")
+final_results <- read.csv("final_data.csv")
+
+# Try with and without standardization
+
+mylm <- lm_robust(results ~.,data=final_results %>% select(-X))
+
+colnames(final_results)
+
+summary(lm)
+
+# Divide up data into test and train
+# set a seed
+set.seed(101) 
+# Should we split up data like this? Maybe split and predict a specific state.
+sample = sample.split(final_results$X, SplitRatio = .75)
+train = subset(final_results, sample == TRUE)
+test  = subset(final_results, sample == FALSE)
+
+# Try MAE and MSE
+# How, exactly, can we tell how accurate this is.
+lasso_cv = cv.glmnet(
+  x = final_results %>% dplyr::select(-results,-X) %>% as.matrix(),
+  y = final_results$results,
+  standardize = T,
+  alpha = 1,
+  lambda = lambdas,
+  # New: How we make decisions and number of folds
+  type.measure = "mse",
+  nfolds = 5
+)
+dim(final_results)
+est_lasso = glmnet(
+  x = final_results %>% dplyr::select(-results,-X) %>% as.matrix(),
+  y = final_results$results,
+  standardize = T,
+  alpha = 1,
+  lambda = lasso_cv$lambda.min
+)
+# Check variable importance
+varImp(est_lasso)
+# Here, sentiment seems to be more important than number of tweets.
+coef(est_lasso)
+
+preds <- predict(
+  lasso_cv,
+  type = "response",
+  # Our chosen lambda
+  s = lasso_cv$lambda.min,
+  # Our data
+  newx = final_results %>% dplyr::select(-results,-X) %>% as.matrix()
+)
+RMSE(pred = preds, obs = final_results$results)
+MAE(pred = preds, obs = final_results$results)
+
+preds <- cbind(preds,test$X)
+varImp(lasso_cv)
+
+## Boosted tree
+# Train the random forest
+boosted = train(
+  results ~ .,
+  data = final_results %>% select(-X),
+  method = "gbm",
+  trControl = trainControl(
+    method = "cv",
+    number = 5
+  ),
+  tuneGrid = expand.grid(
+    "n.trees" = seq(25, 1000, by = 25),
+    "interaction.depth" = 1:5,
+    "shrinkage" = c(0.1, 0.01, 0.001),
+    "n.minobsinnode" = 5
+  )
+)
+boosted$bestTune
+boosted$finalModel
+
+aboost=gbm(results ~ .,data = final_results %>% select(-X),distribution = "gaussian",n.trees = 350,
+           shrinkage = 0.01, interaction.depth = 4)
+
+aboost$fit
+
+myboosted=gbm(results ~ .,data = final_results %>% select(-X),distribution = "gaussian",n.trees = 500,
+              shrinkage = 0.01, interaction.depth = 2)
+boostpreds <- predict(
+  myboosted,
+  type = "response",
+  n.trees = 500,
+  # Our data
+  newx = final_results %>% dplyr::select(-results,-X) %>% as.matrix()
+)
+RMSE(pred = boostpreds, obs = final_results$results)
+MAE(pred = boostpreds, obs = final_results$results)
+
+myboosted
+summary(myboosted)
+plot(myboosted$oobag.improve)
+plot(myboosted$m)
+
+boosted$finalModel
+varImp(boosted)
+
+############# Random forest
+
+# Train the random forest
+forest = train(
+  results ~ .,
+  data = final_results %>% select(-X),
+  method = "ranger",
+  num.trees = 500,
+  trControl = trainControl(
+    method = "oob"
+  ),
+  tuneGrid = expand.grid(
+    "mtry" = 2:13,
+    "splitrule" = "variance",
+    "min.node.size" = 1:10
+  )
+)
+varImp(forest)
+coef(forest)
+# Create the actual forest
+myforest <- ranger(results ~ ., data = final_results %>% select(-X),num.trees = 1000,mtry = 11,min.node.size = 3)
+
+# oob of 106.29
+
+myforest <- randomForest(results ~ ., data = final_results %>% select(-X),ntree = 1000,mtry = 11,min.node.size = 3,importance = TRUE)
+
+forestpreds <- predict(
+  myforest,
+  type = "response",
+  n.trees = 1000,
+  # Our data
+  newx = final_results %>% dplyr::select(-results,-X) %>% as.matrix()
+)
+RMSE(pred = forestpreds, obs = final_results$results)
+MAE(pred = forestpreds, obs = final_results$results)
+
+forestimps <- importance(myforest)
+forestimps %<>% as.data.frame
+importance_forest <- forestimps %>% dplyr::select(-"%IncMSE")
+
+sorted <- forestimps[-order("IncNodePurity"),]
+
+plot(forestimps$IncNodePurity)
+
+svmfit <- svm(results~., data = final_results %>% select(-X), kernel = "radial", scale = FALSE,cost=10)
+
+# Tune radial
+newpolysvm = train(
+  results ~ .,
+  data = final_results %>% select(-X),
+  method = "svmPoly",
+  scaled = T,
+  metric = "RMSE",
+  trControl = trainControl(
+    method = "cv",
+    number = 5
+  ),
+  tuneGrid = expand.grid(
+    #  sigma = c(0.1, 1, 5, 10, 20),
+    C = 10^seq(-7, -4, by = 1),
+    degree = 1,
+    scale = c(.5)
+  )
+)
+
+min(polysvm$results$RMSE)
+
+mysvm <- kernlab::ksvm(
+  results ~ .,
+  data = final_results %>% select(-X),
+  C = .1,
+  degree = 1,
+  scale = .5
+)
+
+svmpoly <- train(
+  results ~ .,
+  data = final_results %>% select(-X),
+  method = "svmPoly",  trControl = trainControl("cv", number = 10),
+  preProcess = c("center","scale"),
+  tuneLength = 4
+)
+
+svmpreds <- predict(
+  svmpoly,
+  type = "raw",
+  # Our data
+  newx = final_results %>% dplyr::select(-results,-X) %>% as.matrix()
+)
+RMSE(pred = svmpreds, obs = final_results$results)
+MAE(pred = svmpreds, obs = final_results$results)
+
+######################### SVM
+
+# Predict
+predict(mysvm, newdata = final_results)
+
+trctrl <- trainControl(method = "repeatedcv", number = 5, repeats = 3)
+knn_fit <- train(results ~ .,
+                 data = final_results %>% select(-X),
+                 method = "knn",
+                 trControl=trctrl,
+                 preProcess = c("center", "scale"),
+                 tuneLength = 10)
+knn_fit
+
+knnpreds <- predict(
+  knn_fit,
+  type = "raw",
+  # Our data
+  newx = final_results %>% dplyr::select(-results,-X) %>% as.matrix()
+)
+RMSE(pred = knnpreds, obs = final_results$results)
+MAE(pred = knnpreds, obs = final_results$results)
+
+masdf <- varImp(knn_fit)
+class(masdf)
+
+plot(varImp(knn_fit))
+```
+
+## Results
+
+Overall, these results have shown that twitter data does not have strong predictive power for actual performance in primaries. However, sentiment surrounding candidates mattered more than other variables. In particular, the sentiment that individuals demonstrated towards candidates two days before a primary had the most effect. This result could be spurious, but it could also imply that individuals make their voting decision a few days before the electon.
+
+A K-Nearest-Neighbors model had the best predictive capability of the models tested. This is likely due to the capability of a nearest neighbors model to capture similar behavior of a specific candidate and assign it to that candidate. For example, Joe Biden overwhelmingly won Super Tuesday, but he received far fewer tweets than Bernie Sanders (who has much younger, technologically involved supporters). The KNN algorithm then took kthe fact that Biden won overwhelmingly, saw how he recieved fewer tweets and more neutral overall sentiment, and slated him to win the primaries. In an election like this, it was a decent guess to just say Joe Biden will win everything. A closer election may have had entirely different results.
+
+
