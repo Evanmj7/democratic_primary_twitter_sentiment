@@ -1,6 +1,8 @@
 # democratic_primary_twitter_sentiment
 
-Twitter data surrounding Democratic Candidates for President from states before primaries was collected. This data was then used to build machine learning models to investigate the efficacy of sentiment surrounding candidates and volume of tweets that reference each candidate.
+Social media is an ever-present part of our daily lives. Individuals around the country use their social media to express themselves, whether it involves sharing experiences, projects, or opinions. Twitter, in particular, provides a platform in which people feel free to openly express their opinions. In the midst of the Democratic primary season, the data contained in these tweets may be of value to candidates. These tweets, when processed for sentiment, may have predictive power in the outcomes of primaries and caucuses.
+
+Twitter data surrounding Democratic Candidates for President from states before primaries was collected. These data were collected at the state level for the 7 days leading up to a primary or caucus for each major candidate in the race. After collection, tweets were pushed through a sentiment analyser (sentimentR), and the total number of tweets for a given time period for each candidate were totaled. This data was then used to build machine learning models to investigate the efficacy of sentiment surrounding candidates and volume of tweets that reference each candidate. The models and the efficacy of them in this specific scenario is discussed.
 
 The Executive Summary provides a high level overview of data collection methods, processing, and results.
 
